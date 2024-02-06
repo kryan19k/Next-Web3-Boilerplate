@@ -2,19 +2,19 @@ import { getDefaultWallets, connectorsForWallets } from "@rainbow-me/rainbowkit"
 import { argentWallet, ledgerWallet } from "@rainbow-me/rainbowkit/wallets";
 import { configureChains, createConfig } from "wagmi";
 import { mainnet, flare, songbird } from "wagmi/chains";
-import { alchemyProvider } from "wagmi/providers/alchemy";
+//import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
-const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+//const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
-if (!alchemyApiKey || !walletConnectProjectId) {
+if (!walletConnectProjectId) {
   throw new Error("Some ENV variables are not defined");
 }
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [...(process.env.NODE_ENV === "production" ? [mainnet] : [songbird, flare])],
-  [alchemyProvider({ apiKey: alchemyApiKey }), publicProvider()],
+  [...(process.env.NODE_ENV === "production" ? [mainnet, songbird, flare] : [songbird, flare])],
+  [publicProvider()],
 );
 
 const { wallets } = getDefaultWallets({

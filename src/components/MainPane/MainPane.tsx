@@ -1163,6 +1163,7 @@ const MainPane = () => {
           address: "0xDeC023Bb7FbC90Fe6211716d10261cE9EEb294C7",
           functionName: "freeMint",
           args: [mintAmount],
+          chainId: 19,
         });
         console.log("Transaction hash:", result);
       }
@@ -1245,10 +1246,10 @@ const MainPane = () => {
                 max={maxMints}
               />
 
-              <Button colorScheme="teal" onClick={() => handleMint("FREE")}>
+              <Button colorScheme="purple" onClick={() => handleMint("FREE")}>
                 Free Mint
               </Button>
-              <Button colorScheme="orange" onClick={() => handleMint("FLR")}>
+              <Button colorScheme="pink" onClick={() => handleMint("FLR")}>
                 Mint with FLR
               </Button>
 
