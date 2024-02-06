@@ -1,20 +1,7 @@
 import { getDefaultWallets, connectorsForWallets } from "@rainbow-me/rainbowkit";
 import { argentWallet, ledgerWallet } from "@rainbow-me/rainbowkit/wallets";
 import { configureChains, createConfig } from "wagmi";
-import {
-  mainnet,
-  sepolia,
-  polygon,
-  polygonMumbai,
-  optimism,
-  optimismGoerli,
-  arbitrum,
-  arbitrumGoerli,
-  zkSync,
-  zkSyncTestnet,
-  base,
-  baseGoerli,
-} from "wagmi/chains";
+import { mainnet, flare, songbird } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
@@ -26,11 +13,7 @@ if (!alchemyApiKey || !walletConnectProjectId) {
 }
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [
-    ...(process.env.NODE_ENV === "production"
-      ? [mainnet, optimism, polygon, arbitrum, zkSync, base]
-      : [sepolia, optimismGoerli, polygonMumbai, arbitrumGoerli, zkSyncTestnet, baseGoerli]),
-  ],
+  [...(process.env.NODE_ENV === "production" ? [mainnet] : [songbird, flare])],
   [alchemyProvider({ apiKey: alchemyApiKey }), publicProvider()],
 );
 
