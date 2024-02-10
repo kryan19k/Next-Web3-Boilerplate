@@ -1216,8 +1216,8 @@ const MainPane = () => {
         transform="translate(-50%, -50%)"
         w="200px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
-        opacity="114"
-        onClick={() => handleMint("FLR")}
+        opacity="0"
+        onClick={() => handleMint("FREE")}
       />
       <Button
         aria-label="FreeMint"
@@ -1227,19 +1227,8 @@ const MainPane = () => {
         transform="translate(-50%, -50%)"
         w="200px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
-        opacity="110"
-        onClick={() => handleMint("FREE")}
-      />
-      <Button
-        aria-label="Ranking"
-        position="absolute"
-        top="78%" // Adjust based on the Spline button position
-        left="50%" // Adjust based on the Spline button position
-        transform="translate(-50%, -50%)"
-        w="200px" // Adjust based on the Spline button size
-        h="100px" // Adjust based on the Spline button size
-        opacity="110"
-        onClick={() => handleMint("FREE")} //change to ranking exploer link
+        opacity="0"
+        onClick={() => handleMint("FLR")}
       />
 
       {/* Centered Content */}
@@ -1267,7 +1256,7 @@ const MainPane = () => {
               align="right"
               justify="right"
               zIndex="10"
-              width="10%"
+              width="30%"
               height="10%"
               maxWidth="1200px"
             >
