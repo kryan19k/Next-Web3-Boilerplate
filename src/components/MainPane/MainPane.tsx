@@ -1240,8 +1240,8 @@ const MainPane = () => {
         width="100%" // Take full width to allow content to push right
         maxWidth="1200px"
         position="absolute" // Position absolutely to place it over the Spline background
-        right="-700" // Align to the right
-        top="560" // Adjust as needed to position vertically
+        right="-400" // Align to the right
+        top="500" // Adjust as needed to position vertically
         p="4" // Padding, adjust as needed
         gap={5}
       >
