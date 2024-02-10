@@ -16,7 +16,7 @@ const Header: FC = () => {
   return (
     <HStack
       as="header"
-      p={"1.5rem"}
+      p={"0.5rem"}
       position="sticky"
       top={0}
       zIndex={10}

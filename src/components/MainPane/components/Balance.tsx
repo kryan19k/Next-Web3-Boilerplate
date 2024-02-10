@@ -13,7 +13,7 @@ const Balance: FC = (): JSX.Element => {
 
   const displayBalance = data?.formatted ? `Ξ ${data?.formatted}` : "0";
 
-  return <InfoText label="Balance" value={displayBalance} />;
+  return <InfoText label="FLR" value={displayBalance} />;
 };
 
 export default Balance;

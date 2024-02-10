@@ -4,9 +4,7 @@ import * as React from "react";
 import { useState } from "react";
 
 import {
-  Divider,
   Flex,
-  Heading,
   Button,
   // useColorMode,
   Input,
@@ -20,9 +18,7 @@ import { writeContract } from "@wagmi/core";
 //import { utils } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
 
-import styles from "@/styles/mainPane.module.css";
-
-import { Status, Balance } from "./components";
+//import styles from "@/styles/mainPane.module.css";
 
 const lilcooties = [
   {
@@ -1117,10 +1113,6 @@ const lilcooties = [
   },
 ];
 
-const contractConfig = {
-  addressOrName: "0xDeC023Bb7FbC90Fe6211716d10261cE9EEb294C7",
-  contractInterface: lilcooties,
-};
 const MainPane = () => {
   const { address: ethAddress, isConnected } = useAccount();
   //const { colorMode } = useColorMode();
@@ -1130,7 +1122,8 @@ const MainPane = () => {
 
   // Contract read hook for freeMints
   const { data: totalMinted, error: totalMintedError } = useContractRead({
-    ...contractConfig,
+    abi: lilcooties,
+    address: "0xDeC023Bb7FbC90Fe6211716d10261cE9EEb294C7",
     functionName: "freeMints",
     args: [ethAddress],
   });
@@ -1144,7 +1137,8 @@ const MainPane = () => {
         // For example, if the contract requires 0.01 FLR per NFT, and mintAmount is 2, then totalValue should be 0.02 FLR
         // You might need to fetch the required FLR amount per mint from the contract or define it here
 
-        const totalValue = mintAmount; // Total value in Wei
+        const costPerNFT = 0.01; // Example value, replace with actual cost per NFT
+        const totalValue = costPerNFT * mintAmount; // Total value in FLR
 
         const result = await writeContract({
           abi: lilcooties,
@@ -1155,6 +1149,7 @@ const MainPane = () => {
             mintAmount.toString(),
             totalValue.toString(), // Convert mintAmount to string if it's a BigNumber or number
           ],
+          chainId: 19,
         });
         console.log("Transaction hash:", result);
       } else if (mintType === "FREE") {
@@ -1163,7 +1158,6 @@ const MainPane = () => {
           address: "0xDeC023Bb7FbC90Fe6211716d10261cE9EEb294C7",
           functionName: "freeMint",
           args: [mintAmount],
-          chainId: 19,
         });
         console.log("Transaction hash:", result);
       }
@@ -1189,53 +1183,93 @@ const MainPane = () => {
   }
 
   const maxMints = typeof totalMinted === "number" ? totalMinted : undefined;
+
   return (
     <Flex
       direction="column"
       align="center"
       justify="center"
-      position="relative" // Add relative positioning here
-      className={styles.container}
-      height="100vh" // Make the container full height
-      width="100vw" // Make the container full width
+      position="relative"
+      w="100vw"
+      h="100vh"
+      overflow="hidden"
     >
       {/* Spline 3D Background */}
       <Spline
-        scene="https://prod.spline.design/FfKqgxFiXLsYKRSq/scene.splinecode"
+        scene="https://prod.spline.design/REAVPvrfrE-wHdgZ/scene.splinecode"
         style={{
-          position: "absolute",
-          top: -200,
-          left: -900,
-          height: "300%",
-          width: "300%",
-          zIndex: -1, // Ensure it stays in the background
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 0,
         }}
+      />
+
+      {/* Invisible Buttons */}
+      <Button
+        aria-label="Mint"
+        position="absolute"
+        top="65%" // Adjust based on the Spline button position
+        left="65%" // Adjust based on the Spline button position
+        transform="translate(-50%, -50%)"
+        w="200px" // Adjust based on the Spline button size
+        h="100px" // Adjust based on the Spline button size
+        opacity="114"
+        onClick={() => handleMint("FLR")}
+      />
+      <Button
+        aria-label="FreeMint"
+        position="absolute"
+        top="65%" // Adjust based on the Spline button position
+        left="50%" // Adjust based on the Spline button position
+        transform="translate(-50%, -50%)"
+        w="200px" // Adjust based on the Spline button size
+        h="100px" // Adjust based on the Spline button size
+        opacity="110"
+        onClick={() => handleMint("FREE")}
+      />
+      <Button
+        aria-label="Ranking"
+        position="absolute"
+        top="78%" // Adjust based on the Spline button position
+        left="50%" // Adjust based on the Spline button position
+        transform="translate(-50%, -50%)"
+        w="200px" // Adjust based on the Spline button size
+        h="100px" // Adjust based on the Spline button size
+        opacity="110"
+        onClick={() => handleMint("FREE")} //change to ranking exploer link
       />
 
       {/* Centered Content */}
       <Flex
-        direction="column"
-        align="center"
-        justify="center"
-        zIndex="1" // Ensure the content is above the Spline background
-        p={4} // Add some padding around the content
-        width="100%" // Full width
+        direction="row"
+        align="center" // Vertically center the content
+        justify="flex" // Move content to the end (right) of the container
+        zIndex="10"
+        width="100%" // Take full width to allow content to push right
+        maxWidth="1200px"
+        position="absolute" // Position absolutely to place it over the Spline background
+        right="-700" // Align to the right
+        top="560" // Adjust as needed to position vertically
+        p="4" // Padding, adjust as needed
+        gap={5}
       >
-        <Heading as="h2" fontSize={"2rem"} mb={10} className="text-shadow">
-          Mint a Lil Cootie!
-        </Heading>
-
         {isConnected ? (
           <>
-            <Status />
-            <Balance />
-            <Divider mb={5} />
             <Flex
-              w={"30%"}
               display={"flex"}
-              justifyContent={"space-around"}
+              //justifyContent={"space-around"}
               flexWrap={"wrap"}
               gap={5}
+              direction="row"
+              align="right"
+              justify="right"
+              zIndex="10"
+              width="10%"
+              height="10%"
+              maxWidth="1200px"
             >
               <Input
                 placeholder="Number of NFTs to mint"
@@ -1245,13 +1279,6 @@ const MainPane = () => {
                 min={1}
                 max={maxMints}
               />
-
-              <Button colorScheme="purple" onClick={() => handleMint("FREE")}>
-                Free Mint
-              </Button>
-              <Button colorScheme="pink" onClick={() => handleMint("FLR")}>
-                Mint with FLR
-              </Button>
 
               <Text>Total Free Mints Available: {totalMinted?.toString()}</Text>
               {/* Display errors related to contract interactions */}
