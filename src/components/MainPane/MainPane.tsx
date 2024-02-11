@@ -1242,7 +1242,7 @@ const MainPane = () => {
         transform="translate(-50%, -50%)"
         w="260px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
-        opacity="100"
+        opacity="0"
         onClick={() => handleMint("FREE")}
       />
       <Button
@@ -1253,7 +1253,7 @@ const MainPane = () => {
         transform="translate(-50%, -50%)"
         w="260px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
-        opacity="120"
+        opacity="0"
         onClick={() => handleMint("FLR")}
       />
 
@@ -1263,12 +1263,13 @@ const MainPane = () => {
         align="center" // Vertically center the content
         justify="flex" // Move content to the end (right) of the container
         zIndex="10"
-        width="30%" // Take full width to allow content to push right
+        width="60%" // Take full width to allow content to push right
         maxWidth="1300px"
         position="absolute" // Position absolutely to place it over the Spline background
-        right="450" // Align to the right
-        top="450" // Adjust as needed to position vertically
-        p="4" // Padding, adjust as needed
+        right={{ base: "45%", md: "30%", lg: "0%" }} // Align to the right
+        top={{ base: "52%", md: "65%", lg: "60%" }} // Example responsive top value
+        transform={{ base: "translateY(-50%)", md: "translateY(-100%)" }} // Example responsive transform
+        p="1" // Padding, adjust as needed
         gap={5}
       >
         {isConnected ? (
