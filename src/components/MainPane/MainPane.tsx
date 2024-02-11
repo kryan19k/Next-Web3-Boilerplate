@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   Flex,
   Button,
+  Box,
   // useColorMode,
   Input,
   Text,
@@ -1206,28 +1207,53 @@ const MainPane = () => {
           zIndex: 0,
         }}
       />
+      <Box
+        position="absolute"
+        top="20%" // Position the alerts box 20% from the top of the viewport
+        left="50%"
+        transform="translateX(-50%)"
+        width="100%" // Ensure it spans the full width of the viewport
+        maxWidth="1200px" // Maximum width of the alerts box
+        px="4" // Horizontal padding
+        zIndex="10"
+      >
+        {/* Display errors related to contract interactions */}
+        {mintError && (
+          <Alert status="error" justifyContent="center" mb="4">
+            <AlertIcon />
+            {mintError}
+          </Alert>
+        )}
+        {totalMintedError && (
+          <Alert status="error" justifyContent="center">
+            <AlertIcon />
+            {totalMintedError.message}
+          </Alert>
+        )}
+      </Box>
+      {/* Minting UI */}
 
       {/* Invisible Buttons */}
       <Button
         aria-label="Mint"
         position="absolute"
-        top="65%" // Adjust based on the Spline button position
-        left="65%" // Adjust based on the Spline button position
+        top="83%" // Adjust based on the Spline button position
+        left="50%" // Adjust based on the Spline button position
         transform="translate(-50%, -50%)"
-        w="200px" // Adjust based on the Spline button size
+        w="260px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
-        opacity="0"
+        opacity="100"
         onClick={() => handleMint("FREE")}
       />
       <Button
         aria-label="FreeMint"
         position="absolute"
-        top="65%" // Adjust based on the Spline button position
+        top="68%" // Adjust based on the Spline button position
         left="50%" // Adjust based on the Spline button position
         transform="translate(-50%, -50%)"
-        w="200px" // Adjust based on the Spline button size
+        w="260px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
-        opacity="0"
+        opacity="120"
         onClick={() => handleMint("FLR")}
       />
 
@@ -1237,27 +1263,27 @@ const MainPane = () => {
         align="center" // Vertically center the content
         justify="flex" // Move content to the end (right) of the container
         zIndex="10"
-        width="100%" // Take full width to allow content to push right
-        maxWidth="1200px"
+        width="30%" // Take full width to allow content to push right
+        maxWidth="1300px"
         position="absolute" // Position absolutely to place it over the Spline background
-        right="-400" // Align to the right
-        top="500" // Adjust as needed to position vertically
+        right="450" // Align to the right
+        top="450" // Adjust as needed to position vertically
         p="4" // Padding, adjust as needed
         gap={5}
       >
         {isConnected ? (
           <>
             <Flex
-              display={"flex"}
-              //justifyContent={"space-around"}
-              flexWrap={"wrap"}
+              display="flex"
+              flexWrap="wrap"
               gap={5}
-              direction="row"
-              align="right"
-              justify="right"
+              direction={{ base: "column", md: "row" }}
+              align="flex-start"
+              justify={{ base: "center", md: "flex" }}
               zIndex="10"
-              width="30%"
-              height="10%"
+              width={{ base: "90%", md: "50%", lg: "30%" }}
+              height="-50%"
+              p={4}
               maxWidth="1200px"
             >
               <Input
@@ -1270,19 +1296,6 @@ const MainPane = () => {
               />
 
               <Text>Total Free Mints Available: {totalMinted?.toString()}</Text>
-              {/* Display errors related to contract interactions */}
-              {mintError && (
-                <Alert status="error">
-                  <AlertIcon />
-                  {mintError}
-                </Alert>
-              )}
-              {totalMintedError && (
-                <Alert status="error">
-                  <AlertIcon />
-                  {totalMintedError.message}
-                </Alert>
-              )}
             </Flex>
           </>
         ) : (
