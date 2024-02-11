@@ -1,15 +1,15 @@
 {
   "name": "next-web3-boilerplate",
   "version": "0.1.4",
-  "description": "Nextjs web3 boilerplate built on Viem, Wagmi, rainbowkit and Chakra UI",
-  "author": "Pedrojok01 <pedrojok@pm.me>",
+  "description": "lilcootie mint page",
+  "author": "Thoth",
   "license": "MIT",
   "private": true,
-  "homepage": "https://next-web3-boilerlate.com",
-  "bugs": "https://github.com/Pedrojok01/Next-Web3-Boilerplate/issues",
+  "homepage": "https://cootie.finance",
+  "bugs": "",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Pedrojok01/Next-Web3-Boilerplate"
+    "url": "https://github.com/kryan19k/Next-Web3-Boilerplate"
   },
   "scripts": {
     "dev": "next dev",
