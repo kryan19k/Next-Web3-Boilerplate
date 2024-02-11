@@ -15,6 +15,7 @@ import {
 } from "@chakra-ui/react";
 import Spline from "@splinetool/react-spline";
 import { writeContract } from "@wagmi/core";
+import { ethers } from "ethers";
 //import { ethers } from "ethers";
 //import { utils } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
@@ -1138,8 +1139,9 @@ const MainPane = () => {
         // For example, if the contract requires 0.01 FLR per NFT, and mintAmount is 2, then totalValue should be 0.02 FLR
         // You might need to fetch the required FLR amount per mint from the contract or define it here
 
-        const costPerNFT = 0.01; // Example value, replace with actual cost per NFT
-        const totalValue = costPerNFT * mintAmount; // Total value in FLR
+        const ethPrice = 1;
+        const totalCostInEther = (ethPrice * mintAmount).toString(); // Total cost in Ether
+        const totalCostInWei = ethers.parseUnits(totalCostInEther, "ether"); // Convert to Wei
 
         const result = await writeContract({
           abi: lilcooties,
@@ -1147,9 +1149,9 @@ const MainPane = () => {
           functionName: "mintWithFLR",
           args: [
             ethAddress, // The address to which the NFT will be minted
-            mintAmount.toString(),
-            totalValue.toString(), // Convert mintAmount to string if it's a BigNumber or number
+            mintAmount, // The number of tokens to mint
           ],
+          value: totalCostInWei, // The total ETH value to send with the transaction in Wei
           chainId: 19,
         });
         console.log("Transaction hash:", result);
