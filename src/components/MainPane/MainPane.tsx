@@ -3,20 +3,9 @@ import * as React from "react";
 //import { type FC } from "react";
 import { useState } from "react";
 
-import {
-  Flex,
-  Button,
-  Box,
-  // useColorMode,
-  Input,
-  Text,
-  Alert,
-  AlertIcon,
-} from "@chakra-ui/react";
+import { Flex, Button, Box, Input, Text, Alert, AlertIcon } from "@chakra-ui/react";
 import Spline from "@splinetool/react-spline";
 import { writeContract } from "@wagmi/core";
-//import { ethers } from "ethers";
-//import { utils } from "ethers";
 import { parseUnits } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
 
@@ -1117,7 +1106,6 @@ const lilcooties = [
 
 const MainPane = () => {
   const { address: ethAddress, isConnected } = useAccount();
-  //const { colorMode } = useColorMode();
   const [mintAmount, setMintAmount] = useState<number>(1);
   const [, setIsMinting] = useState<boolean>(false); // State to handle minting state
   const [mintError, setMintError] = useState<string | null>(null); // State to store minting errors
