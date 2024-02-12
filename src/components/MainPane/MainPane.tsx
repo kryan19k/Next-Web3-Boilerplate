@@ -1229,7 +1229,7 @@ const MainPane = () => {
         position="absolute"
         top="83%" // Adjust based on the Spline button position
         left="50%" // Adjust based on the Spline button position
-        transform="translate(-50%, -50%)"
+        transform="translate(-50%, -70%)"
         w="260px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
         opacity="0"
@@ -1240,7 +1240,7 @@ const MainPane = () => {
         position="absolute"
         top="68%" // Adjust based on the Spline button position
         left="50%" // Adjust based on the Spline button position
-        transform="translate(-50%, -50%)"
+        transform="translate(-50%, -70%)"
         w="260px" // Adjust based on the Spline button size
         h="100px" // Adjust based on the Spline button size
         opacity="0"
