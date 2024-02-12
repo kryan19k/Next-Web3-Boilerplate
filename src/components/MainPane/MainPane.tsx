@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Flex, Button, Box, Input, Text, Alert, AlertIcon } from "@chakra-ui/react";
 import Spline from "@splinetool/react-spline";
 import { writeContract } from "@wagmi/core";
-import { parseUnits } from "ethers";
+import { ethers } from "ethers";
 import { useAccount, useContractRead } from "wagmi";
 
 //import styles from "@/styles/mainPane.module.css";
@@ -1129,7 +1129,7 @@ const MainPane = () => {
 
         const ethPrice = 1;
         const totalCostInEther = (ethPrice * mintAmount).toString(); // Total cost in Ether
-        const totalCostInWei = parseUnits(totalCostInEther, "ether"); // Convert to Wei
+        const totalCostInWei = ethers.parseUnits(totalCostInEther, "ether"); // Convert to Wei
 
         const result = await writeContract({
           abi: lilcooties,
