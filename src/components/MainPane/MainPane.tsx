@@ -1109,6 +1109,27 @@ const MainPane = () => {
   const [mintAmount, setMintAmount] = useState<number>(1);
   const [, setIsMinting] = useState<boolean>(false); // State to handle minting state
   const [mintError, setMintError] = useState<string | null>(null); // State to store minting errors
+  const [errorTimeout, setErrorTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isSplineLoaded, setSplineLoaded] = useState(false);
+
+  // Error display timeout function
+  const setErrorWithTimeout = (error: string, duration: number = 5000) => {
+    // Clear any existing error timeout
+    if (errorTimeout) clearTimeout(errorTimeout);
+
+    // Set new error and clear it after duration
+    setMintError(error);
+    const newTimeout = setTimeout(() => {
+      setMintError(null);
+    }, duration);
+    setErrorTimeout(newTimeout);
+  };
+  React.useEffect(() => {
+    // Cleanup timeout on component unmount
+    return () => {
+      if (errorTimeout) clearTimeout(errorTimeout);
+    };
+  }, [errorTimeout]);
 
   // Contract read hook for freeMints
   const { data: totalMinted, error: totalMintedError } = useContractRead({
@@ -1117,6 +1138,7 @@ const MainPane = () => {
     functionName: "freeMints",
     args: [ethAddress],
   });
+
   const handleMint = async (mintType: "FLR" | "FREE") => {
     setIsMinting(true);
     setMintError(null);
@@ -1154,7 +1176,7 @@ const MainPane = () => {
       }
     } catch (error) {
       console.error(`Error during ${mintType} minting:`, error);
-      setMintError(
+      setErrorWithTimeout(
         `Error during ${mintType} minting: ${
           error instanceof Error ? error.message : String(error)
         }`,
@@ -1185,9 +1207,36 @@ const MainPane = () => {
       h="100vh"
       overflow="hidden"
     >
+      {/* Loading animation that displays when Spline is not loaded */}
+      {!isSplineLoaded && (
+        <Flex
+          justify="center"
+          align="center"
+          position="absolute"
+          top="0"
+          left="0"
+          width="100%"
+          height="100%"
+          bg="blackAlpha.700" // Optional: adding a background overlay
+        >
+          <div
+            style={{
+              border: "4px solid rgba(255, 255, 255, 0.3)",
+              borderTop: "4px solid #3498db",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              animation: "spin 2s linear infinite",
+            }}
+            // Inline style for keyframes doesn't work directly in React, so you should add it in your global CSS file
+          ></div>
+        </Flex>
+      )}
+
       {/* Spline 3D Background */}
       <Spline
         scene="https://prod.spline.design/REAVPvrfrE-wHdgZ/scene.splinecode"
+        onLoad={() => setSplineLoaded(true)} // Set the Spline as loaded
         style={{
           position: "fixed",
           top: 0,
@@ -1195,6 +1244,7 @@ const MainPane = () => {
           width: "100%",
           height: "100%",
           zIndex: 0,
+          display: isSplineLoaded ? "block" : "none",
         }}
       />
       <Box
