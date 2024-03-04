@@ -1,5 +1,5 @@
 {
-  "name": "next-web3-boilerplate",
+  "name": "lilcooties",
   "version": "0.1.4",
   "description": "lilcootie mint page",
   "author": "Thoth",
@@ -29,7 +29,7 @@
     "@splinetool/react-spline": "^2.2.6",
     "@splinetool/runtime": "^1.0.48",
     "ethers": "^6.11.0",
-    "framer-motion": "10.16.4",
+    "framer-motion": "^11.0.5",
     "next": "13.5.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -43,6 +43,7 @@
     "@types/react": "18.2.29",
     "@types/react-dom": "18.2.14",
     "@typescript-eslint/eslint-plugin": "6.8.0",
+    "autoprefixer": "^10.4.17",
     "eslint": "8.51.0",
     "eslint-config-next": "13.5.6",
     "eslint-config-prettier": "9.0.0",
@@ -50,7 +51,9 @@
     "eslint-plugin-import": "2.28.1",
     "eslint-plugin-prettier": "5.0.1",
     "husky": "8.0.3",
+    "postcss": "^8.4.35",
     "prettier": "3.0.3",
+    "tailwindcss": "^3.4.1",
     "typescript": "5.2.2"
   },
   "keywords": [

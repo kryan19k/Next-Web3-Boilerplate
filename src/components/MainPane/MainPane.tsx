@@ -1,1353 +1,541 @@
-// components/MainPane.tsx
-import * as React from "react";
-//import { type FC } from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-import { Flex, Button, Box, Input, Text, Alert, AlertIcon } from "@chakra-ui/react";
+import { Box, Button, Text, VStack, useToast } from "@chakra-ui/react";
 import Spline from "@splinetool/react-spline";
-import { writeContract } from "@wagmi/core";
 import { ethers } from "ethers";
-import { useAccount, useContractRead } from "wagmi";
+import { useContractRead, useContractWrite, useAccount } from "wagmi";
 
-//import styles from "@/styles/mainPane.module.css";
+const stakingContractAddress = "0xb41e682E276aa0F9B89F94020A1AAb370c9a628a";
 
-const lilcooties = [
+const StakingPage = () => {
+  const toast = useToast();
+  const { address } = useAccount();
+  const [nftCount, setNftCount] = useState(0);
+  const [rewards, setRewards] = useState("0");
+  const [bonusMultiplier, setBonusMultiplier] = useState("0");
+  const [showStats, setShowStats] = useState(false); // New state to control visibility
+
+  // Fetch NFT count
+  const { data: nftCountData } = useContractRead({
+    abi: stakingABI,
+    address: stakingContractAddress,
+    functionName: "getNftCount",
+    args: [address],
+  });
+
+  // Fetch rewards
+  const { data: rewardsData } = useContractRead({
+    abi: stakingABI,
+    address: stakingContractAddress,
+    functionName: "calculateRewards",
+    args: [address],
+  });
+
+  // Fetch bonus multiplier
+  const { data: bonusMultiplierData } = useContractRead({
+    abi: stakingABI,
+    address: stakingContractAddress,
+    functionName: "getBonusMultiplier",
+  });
+
+  // Claim rewards
+  const { write: claimRewards, isLoading: isClaiming } = useContractWrite({
+    address: stakingContractAddress,
+    abi: stakingABI,
+    functionName: "claimRewards",
+    onError(error) {
+      toast({
+        title: "Error",
+        description: `Failed to claim rewards: ${error.message}`,
+        status: "error",
+        duration: 9000,
+        isClosable: true,
+      });
+    },
+  });
+
+  useEffect(() => {
+    // Delay showing the stats
+    const timer = setTimeout(() => {
+      setShowStats(true); // Enable stats display after 3 seconds
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array ensures this runs once on mount
+
+  useEffect(() => {
+    if (showStats) {
+      if (nftCountData) setNftCount(parseInt(nftCountData.toString(), 10));
+
+      // Convert rewards from wei to ether
+      if (rewardsData) setRewards(ethers.formatEther(rewardsData.toString()).substring(0, 6));
+
+      if (bonusMultiplierData) setBonusMultiplier(bonusMultiplierData.toString());
+    }
+  }, [nftCountData, rewardsData, bonusMultiplierData, showStats]);
+
+  // Adjust these styles to position elements correctly over your Spline design
+  const buttonStyles = {
+    position: "absolute",
+    pointerEvents: "auto",
+    bottom: ["46%", "30%", "45%"], // Example for different breakpoints
+    left: ["52%", "36%", "58%"],
+    transform: "translateX(-50%)",
+    opacity: 0,
+    zIndex: 0,
+    width: ["150px", "175px", "200px", "485px"], // values for different breakpoints
+    height: ["50px", "75px", "85px", "100px"],
+  };
+
+  const statsStyles = {
+    position: "absolute",
+    top: ["39%", "38%", "39%"], // Example for different breakpoints
+    left: ["77%", "63%", "69%"], // Adjust according to your design
+    transform: "translateX(-50%) translateY(-50%)",
+    zIndex: 10,
+    color: "white",
+    textAlign: "left",
+  };
+
+  const rewwardStyles = {
+    position: "absolute",
+    top: ["36%", "32%", "36%"], // Example for different breakpoints
+    left: ["32%", "52%", "49%"], // Adjust according to your design
+    transform: "translateX(-50%) translateY(-50%)",
+    zIndex: 10,
+    color: "white",
+    textAlign: "left",
+  };
+
+  return (
+    <Box position="relative" textAlign="center" fontSize="xl" h="100vh" w="full">
+      <Spline scene="https://prod.spline.design/UgFw9HTogjpqVCVM/scene.splinecode" />
+      <Button sx={buttonStyles} onClick={() => claimRewards()} isLoading={isClaiming} />
+
+      {showStats && ( // Conditional rendering based on showStats
+        <>
+          <VStack sx={statsStyles} spacing={4}>
+            <Text fontSize="lg">{nftCount}</Text>
+            <Text fontSize="lg"> {bonusMultiplier}</Text>
+          </VStack>
+          <VStack sx={rewwardStyles} spacing={4}>
+            <Text fontSize="lg">{rewards} Tokens</Text>
+          </VStack>
+        </>
+      )}
+    </Box>
+  );
+};
+
+export default StakingPage;
+
+const stakingABI = [
   {
     type: "constructor",
     inputs: [
-      {
-        type: "string",
-        name: "initialBaseURI",
-        internalType: "string",
-      },
-      {
-        type: "address",
-        name: "initialOwner",
-        internalType: "address",
-      },
-      {
-        type: "address[]",
-        name: "accounts",
-        internalType: "address[]",
-      },
-      {
-        type: "uint256[]",
-        name: "freeMintCounts",
-        internalType: "uint256[]",
-      },
-      {
-        type: "uint256",
-        name: "initialEthPrice",
-        internalType: "uint256",
-      },
-      {
-        type: "bool",
-        name: "initialUseERC20Payment",
-        internalType: "bool",
-      },
+      { type: "address", name: "_rewardsToken", internalType: "contract IERC20" },
+      { type: "address", name: "_nftCollection", internalType: "contract IERC721Enumerable" },
+      { type: "uint256", name: "_rewardsPerNftPerHour", internalType: "uint256" },
     ],
   },
   {
     type: "function",
     stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "LEADERBOARD_SIZE",
+    outputs: [{ type: "bytes32", name: "", internalType: "bytes32" }],
+    name: "ADMIN_ROLE",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "bytes32", name: "", internalType: "bytes32" }],
+    name: "DEFAULT_ADMIN_ROLE",
     inputs: [],
   },
   {
     type: "function",
     stateMutability: "nonpayable",
     outputs: [],
-    name: "addCurrency",
-    inputs: [
-      {
-        type: "address",
-        name: "_payToken",
-        internalType: "contract IERC20",
-      },
-      {
-        type: "uint256",
-        name: "_costValue",
-        internalType: "uint256",
-      },
-    ],
+    name: "addAdmin",
+    inputs: [{ type: "address", name: "account", internalType: "address" }],
   },
   {
     type: "function",
     stateMutability: "view",
-    outputs: [
-      {
-        type: "address",
-        name: "payToken",
-        internalType: "contract IERC20",
-      },
-      {
-        type: "uint256",
-        name: "costValue",
-        internalType: "uint256",
-      },
-    ],
-    name: "allowedCrypto",
-    inputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "bonusPercentPerTier",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "calculateBonusMultiplier",
+    inputs: [{ type: "uint256", name: "tokenId", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "calculateRewards",
+    inputs: [{ type: "address", name: "user", internalType: "address" }],
   },
   {
     type: "function",
     stateMutability: "nonpayable",
     outputs: [],
-    name: "approve",
-    inputs: [
-      {
-        type: "address",
-        name: "to",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
+    name: "claimRewards",
+    inputs: [],
   },
   {
     type: "function",
     stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "balanceOf",
-    inputs: [
-      {
-        type: "address",
-        name: "owner",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "string",
-        name: "",
-        internalType: "string",
-      },
-    ],
-    name: "baseExtension",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "firstClaimAmount",
     inputs: [],
   },
   {
     type: "function",
     stateMutability: "view",
     outputs: [
-      {
-        type: "string",
-        name: "",
-        internalType: "string",
-      },
+      { type: "uint256[]", name: "tiers", internalType: "uint256[]" },
+      { type: "uint256[]", name: "bonuses", internalType: "uint256[]" },
     ],
-    name: "baseURI",
+    name: "getAllTierInfo",
+    inputs: [{ type: "address", name: "user", internalType: "address" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "getBonusMultiplier",
+    inputs: [{ type: "address", name: "user", internalType: "address" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "getNftCount",
+    inputs: [{ type: "address", name: "user", internalType: "address" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "getRewardsBalance",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "bytes32", name: "", internalType: "bytes32" }],
+    name: "getRoleAdmin",
+    inputs: [{ type: "bytes32", name: "role", internalType: "bytes32" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "getTier",
+    inputs: [{ type: "uint256", name: "tokenId", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "getTierDuration",
+    inputs: [{ type: "uint256", name: "tier", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [
+      { type: "uint256", name: "tierLevel", internalType: "uint256" },
+      { type: "uint256", name: "bonusMultiplier", internalType: "uint256" },
+    ],
+    name: "getTierInfo",
+    inputs: [{ type: "uint256", name: "tokenId", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "nonpayable",
+    outputs: [],
+    name: "grantRole",
+    inputs: [
+      { type: "bytes32", name: "role", internalType: "bytes32" },
+      { type: "address", name: "account", internalType: "address" },
+    ],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "bool", name: "", internalType: "bool" }],
+    name: "hasRole",
+    inputs: [
+      { type: "bytes32", name: "role", internalType: "bytes32" },
+      { type: "address", name: "account", internalType: "address" },
+    ],
+  },
+  {
+    type: "function",
+    stateMutability: "nonpayable",
+    outputs: [],
+    name: "modifyNftTiers",
+    inputs: [
+      { type: "uint256", name: "tokenId", internalType: "uint256" },
+      { type: "uint256", name: "newTier", internalType: "uint256" },
+    ],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "address", name: "", internalType: "contract IERC721Enumerable" }],
+    name: "nftCollection",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "nftHoldingStartTime",
+    inputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "nftTier",
+    inputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "nonpayable",
+    outputs: [],
+    name: "renounceRole",
+    inputs: [
+      { type: "bytes32", name: "role", internalType: "bytes32" },
+      { type: "address", name: "callerConfirmation", internalType: "address" },
+    ],
+  },
+  {
+    type: "function",
+    stateMutability: "nonpayable",
+    outputs: [],
+    name: "revokeRole",
+    inputs: [
+      { type: "bytes32", name: "role", internalType: "bytes32" },
+      { type: "address", name: "account", internalType: "address" },
+    ],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "rewardsPerNftPerHour",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "address", name: "", internalType: "contract IERC20" }],
+    name: "rewardsToken",
     inputs: [],
   },
   {
     type: "function",
     stateMutability: "nonpayable",
     outputs: [],
-    name: "burn",
+    name: "setNftHoldingStartTime",
     inputs: [
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "freeMint",
-    inputs: [
-      {
-        type: "uint256",
-        name: "_mintAmount",
-        internalType: "uint256",
-      },
+      { type: "uint256", name: "tokenId", internalType: "uint256" },
+      { type: "uint256", name: "startTime", internalType: "uint256" },
     ],
   },
   {
     type: "function",
     stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "freeMints",
-    inputs: [
-      {
-        type: "address",
-        name: "",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "address",
-        name: "",
-        internalType: "address",
-      },
-    ],
-    name: "getApproved",
-    inputs: [
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "bool",
-        name: "",
-        internalType: "bool",
-      },
-    ],
-    name: "isApprovedForAll",
-    inputs: [
-      {
-        type: "address",
-        name: "owner",
-        internalType: "address",
-      },
-      {
-        type: "address",
-        name: "operator",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "bool",
-        name: "",
-        internalType: "bool",
-      },
-    ],
-    name: "isPresaleActive",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "address",
-        name: "holder",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "count",
-        internalType: "uint256",
-      },
-    ],
-    name: "leaderboard",
-    inputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "maxMintAmount",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "maxSupply",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "mintWithERC20",
-    inputs: [
-      {
-        type: "address",
-        name: "_to",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "_mintAmount",
-        internalType: "uint256",
-      },
-      {
-        type: "uint256",
-        name: "_pid",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "payable",
-    outputs: [],
-    name: "mintWithFLR",
-    inputs: [
-      {
-        type: "address",
-        name: "_to",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "_mintAmount",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "string",
-        name: "",
-        internalType: "string",
-      },
-    ],
-    name: "name",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "address",
-        name: "",
-        internalType: "address",
-      },
-    ],
-    name: "owner",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "address",
-        name: "",
-        internalType: "address",
-      },
-    ],
-    name: "ownerOf",
-    inputs: [
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "pause",
-    inputs: [
-      {
-        type: "bool",
-        name: "_state",
-        internalType: "bool",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "bool",
-        name: "",
-        internalType: "bool",
-      },
-    ],
-    name: "paused",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "renounceOwnership",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "address",
-        name: "",
-        internalType: "address",
-      },
-    ],
-    name: "royaltyAccount",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "royaltyPercentage",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "safeTransferFrom",
-    inputs: [
-      {
-        type: "address",
-        name: "from",
-        internalType: "address",
-      },
-      {
-        type: "address",
-        name: "to",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "safeTransferFrom",
-    inputs: [
-      {
-        type: "address",
-        name: "from",
-        internalType: "address",
-      },
-      {
-        type: "address",
-        name: "to",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-      {
-        type: "bytes",
-        name: "data",
-        internalType: "bytes",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "setApprovalForAll",
-    inputs: [
-      {
-        type: "address",
-        name: "operator",
-        internalType: "address",
-      },
-      {
-        type: "bool",
-        name: "approved",
-        internalType: "bool",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "setBaseExtension",
-    inputs: [
-      {
-        type: "string",
-        name: "_newBaseExtension",
-        internalType: "string",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "setBaseURI",
-    inputs: [
-      {
-        type: "string",
-        name: "_newBaseURI",
-        internalType: "string",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "setEthPrice",
-    inputs: [
-      {
-        type: "uint256",
-        name: "_newEthPrice",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "setMaxMintAmount",
-    inputs: [
-      {
-        type: "uint256",
-        name: "_newMaxMintAmount",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "setPresaleState",
-    inputs: [
-      {
-        type: "bool",
-        name: "_state",
-        internalType: "bool",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "setRoyaltyInfo",
-    inputs: [
-      {
-        type: "address",
-        name: "_royaltyAccount",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "_royaltyPercentage",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "bool",
-        name: "",
-        internalType: "bool",
-      },
-    ],
+    outputs: [{ type: "bool", name: "", internalType: "bool" }],
     name: "supportsInterface",
-    inputs: [
-      {
-        type: "bytes4",
-        name: "interfaceId",
-        internalType: "bytes4",
-      },
-    ],
+    inputs: [{ type: "bytes4", name: "interfaceId", internalType: "bytes4" }],
   },
   {
     type: "function",
     stateMutability: "view",
-    outputs: [
-      {
-        type: "string",
-        name: "",
-        internalType: "string",
-      },
-    ],
-    name: "symbol",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "tier1Duration",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "tier2Duration",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "tier3Duration",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "tier4Duration",
+    inputs: [],
+  },
+  {
+    type: "function",
+    stateMutability: "view",
+    outputs: [{ type: "uint256", name: "", internalType: "uint256" }],
+    name: "tier5Duration",
     inputs: [],
   },
   {
     type: "function",
     stateMutability: "nonpayable",
     outputs: [],
-    name: "toggleERC20Payment",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "tokenByIndex",
-    inputs: [
-      {
-        type: "uint256",
-        name: "index",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "tokenOfOwnerByIndex",
-    inputs: [
-      {
-        type: "address",
-        name: "owner",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "index",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "string",
-        name: "",
-        internalType: "string",
-      },
-    ],
-    name: "tokenURI",
-    inputs: [
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256",
-        name: "",
-        internalType: "uint256",
-      },
-    ],
-    name: "totalSupply",
-    inputs: [],
+    name: "updateBonusPercentPerTier",
+    inputs: [{ type: "uint256", name: "_bonusPercentPerTier", internalType: "uint256" }],
   },
   {
     type: "function",
     stateMutability: "nonpayable",
     outputs: [],
-    name: "transferFrom",
+    name: "updateFirstClaimAmount",
+    inputs: [{ type: "uint256", name: "_firstClaimAmount", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "nonpayable",
+    outputs: [],
+    name: "updateRewardsPerNftPerHour",
+    inputs: [{ type: "uint256", name: "_rewardsPerNftPerHour", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    stateMutability: "nonpayable",
+    outputs: [],
+    name: "updateTierDurations",
     inputs: [
-      {
-        type: "address",
-        name: "from",
-        internalType: "address",
-      },
-      {
-        type: "address",
-        name: "to",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
+      { type: "uint256", name: "_tier1Duration", internalType: "uint256" },
+      { type: "uint256", name: "_tier2Duration", internalType: "uint256" },
+      { type: "uint256", name: "_tier3Duration", internalType: "uint256" },
+      { type: "uint256", name: "_tier4Duration", internalType: "uint256" },
+      { type: "uint256", name: "_tier5Duration", internalType: "uint256" },
     ],
   },
   {
     type: "function",
     stateMutability: "nonpayable",
     outputs: [],
-    name: "transferOwnership",
-    inputs: [
-      {
-        type: "address",
-        name: "newOwner",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "bool",
-        name: "",
-        internalType: "bool",
-      },
-    ],
-    name: "useERC20Payment",
-    inputs: [],
-  },
-  {
-    type: "function",
-    stateMutability: "view",
-    outputs: [
-      {
-        type: "uint256[]",
-        name: "",
-        internalType: "uint256[]",
-      },
-    ],
-    name: "walletOfOwner",
-    inputs: [
-      {
-        type: "address",
-        name: "_owner",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "function",
-    stateMutability: "nonpayable",
-    outputs: [],
-    name: "withdraw",
-    inputs: [
-      {
-        type: "uint256",
-        name: "_pid",
-        internalType: "uint256",
-      },
-    ],
+    name: "withdrawRewards",
+    inputs: [{ type: "uint256", name: "amount", internalType: "uint256" }],
   },
   {
     type: "event",
-    name: "Approval",
+    name: "BonusPercentPerTierUpdated",
+    inputs: [{ type: "uint256", name: "newBonusPercentPerTier", indexed: false }],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "FirstClaimAmountUpdated",
+    inputs: [{ type: "uint256", name: "newFirstClaimAmount", indexed: false }],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "NftTierModified",
     inputs: [
-      {
-        type: "address",
-        name: "owner",
-        indexed: true,
-      },
-      {
-        type: "address",
-        name: "approved",
-        indexed: true,
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        indexed: true,
-      },
+      { type: "uint256", name: "tokenId", indexed: false },
+      { type: "uint256", name: "newTier", indexed: false },
     ],
     anonymous: false,
   },
   {
     type: "event",
-    name: "ApprovalForAll",
+    name: "RewardsClaimed",
     inputs: [
-      {
-        type: "address",
-        name: "owner",
-        indexed: true,
-      },
-      {
-        type: "address",
-        name: "operator",
-        indexed: true,
-      },
-      {
-        type: "bool",
-        name: "approved",
-        indexed: false,
-      },
+      { type: "address", name: "user", indexed: true },
+      { type: "uint256", name: "amount", indexed: false },
     ],
     anonymous: false,
   },
   {
     type: "event",
-    name: "NftTransfer",
+    name: "RewardsPerNftPerHourUpdated",
+    inputs: [{ type: "uint256", name: "newRewardsPerNftPerHour", indexed: false }],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "RoleAdminChanged",
     inputs: [
-      {
-        type: "address",
-        name: "from",
-        indexed: true,
-      },
-      {
-        type: "address",
-        name: "to",
-        indexed: true,
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        indexed: true,
-      },
+      { type: "bytes32", name: "role", indexed: true },
+      { type: "bytes32", name: "previousAdminRole", indexed: true },
+      { type: "bytes32", name: "newAdminRole", indexed: true },
     ],
     anonymous: false,
   },
   {
     type: "event",
-    name: "OwnershipTransferred",
+    name: "RoleGranted",
     inputs: [
-      {
-        type: "address",
-        name: "previousOwner",
-        indexed: true,
-      },
-      {
-        type: "address",
-        name: "newOwner",
-        indexed: true,
-      },
+      { type: "bytes32", name: "role", indexed: true },
+      { type: "address", name: "account", indexed: true },
+      { type: "address", name: "sender", indexed: true },
     ],
     anonymous: false,
   },
   {
     type: "event",
-    name: "Transfer",
+    name: "RoleRevoked",
     inputs: [
-      {
-        type: "address",
-        name: "from",
-        indexed: true,
-      },
-      {
-        type: "address",
-        name: "to",
-        indexed: true,
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        indexed: true,
-      },
+      { type: "bytes32", name: "role", indexed: true },
+      { type: "address", name: "account", indexed: true },
+      { type: "address", name: "sender", indexed: true },
     ],
     anonymous: false,
+  },
+  {
+    type: "event",
+    name: "TierDurationsUpdated",
+    inputs: [
+      { type: "uint256", name: "tier1Duration", indexed: false },
+      { type: "uint256", name: "tier2Duration", indexed: false },
+      { type: "uint256", name: "tier3Duration", indexed: false },
+      { type: "uint256", name: "tier4Duration", indexed: false },
+      { type: "uint256", name: "tier5Duration", indexed: false },
+    ],
+    anonymous: false,
+  },
+  { type: "error", name: "AccessControlBadConfirmation", inputs: [] },
+  {
+    type: "error",
+    name: "AccessControlUnauthorizedAccount",
+    inputs: [
+      { type: "address", name: "account", internalType: "address" },
+      { type: "bytes32", name: "neededRole", internalType: "bytes32" },
+    ],
   },
   {
     type: "error",
     name: "AddressEmptyCode",
-    inputs: [
-      {
-        type: "address",
-        name: "target",
-        internalType: "address",
-      },
-    ],
+    inputs: [{ type: "address", name: "target", internalType: "address" }],
   },
   {
     type: "error",
     name: "AddressInsufficientBalance",
-    inputs: [
-      {
-        type: "address",
-        name: "account",
-        internalType: "address",
-      },
-    ],
+    inputs: [{ type: "address", name: "account", internalType: "address" }],
   },
-  {
-    type: "error",
-    name: "ERC721EnumerableForbiddenBatchMint",
-    inputs: [],
-  },
-  {
-    type: "error",
-    name: "ERC721IncorrectOwner",
-    inputs: [
-      {
-        type: "address",
-        name: "sender",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-      {
-        type: "address",
-        name: "owner",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721InsufficientApproval",
-    inputs: [
-      {
-        type: "address",
-        name: "operator",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721InvalidApprover",
-    inputs: [
-      {
-        type: "address",
-        name: "approver",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721InvalidOperator",
-    inputs: [
-      {
-        type: "address",
-        name: "operator",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721InvalidOwner",
-    inputs: [
-      {
-        type: "address",
-        name: "owner",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721InvalidReceiver",
-    inputs: [
-      {
-        type: "address",
-        name: "receiver",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721InvalidSender",
-    inputs: [
-      {
-        type: "address",
-        name: "sender",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721NonexistentToken",
-    inputs: [
-      {
-        type: "uint256",
-        name: "tokenId",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ERC721OutOfBoundsIndex",
-    inputs: [
-      {
-        type: "address",
-        name: "owner",
-        internalType: "address",
-      },
-      {
-        type: "uint256",
-        name: "index",
-        internalType: "uint256",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "FailedInnerCall",
-    inputs: [],
-  },
-  {
-    type: "error",
-    name: "OwnableInvalidOwner",
-    inputs: [
-      {
-        type: "address",
-        name: "owner",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "OwnableUnauthorizedAccount",
-    inputs: [
-      {
-        type: "address",
-        name: "account",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "ReentrancyGuardReentrantCall",
-    inputs: [],
-  },
+  { type: "error", name: "FailedInnerCall", inputs: [] },
+  { type: "error", name: "ReentrancyGuardReentrantCall", inputs: [] },
   {
     type: "error",
     name: "SafeERC20FailedOperation",
-    inputs: [
-      {
-        type: "address",
-        name: "token",
-        internalType: "address",
-      },
-    ],
+    inputs: [{ type: "address", name: "token", internalType: "address" }],
   },
 ];
-
-const MainPane = () => {
-  const { address: ethAddress, isConnected } = useAccount();
-  const [mintAmount, setMintAmount] = useState<number>(1);
-  const [, setIsMinting] = useState<boolean>(false); // State to handle minting state
-  const [mintError, setMintError] = useState<string | null>(null); // State to store minting errors
-  const [errorTimeout, setErrorTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isSplineLoaded, setSplineLoaded] = useState(false);
-
-  // Error display timeout function
-  const setErrorWithTimeout = (error: string, duration: number = 5000) => {
-    // Clear any existing error timeout
-    if (errorTimeout) clearTimeout(errorTimeout);
-
-    // Set new error and clear it after duration
-    setMintError(error);
-    const newTimeout = setTimeout(() => {
-      setMintError(null);
-    }, duration);
-    setErrorTimeout(newTimeout);
-  };
-  React.useEffect(() => {
-    // Cleanup timeout on component unmount
-    return () => {
-      if (errorTimeout) clearTimeout(errorTimeout);
-    };
-  }, [errorTimeout]);
-
-  // Contract read hook for freeMints
-  const { data: totalMinted, error: totalMintedError } = useContractRead({
-    abi: lilcooties,
-    address: "0xDeC023Bb7FbC90Fe6211716d10261cE9EEb294C7",
-    functionName: "freeMints",
-    args: [ethAddress],
-  });
-
-  const handleMint = async (mintType: "FLR" | "FREE") => {
-    setIsMinting(true);
-    setMintError(null);
-
-    try {
-      if (mintType === "FLR") {
-        // Make sure to calculate the correct totalValue based on contract requirements
-        // For example, if the contract requires 0.01 FLR per NFT, and mintAmount is 2, then totalValue should be 0.02 FLR
-        // You might need to fetch the required FLR amount per mint from the contract or define it here
-
-        const ethPrice = 1;
-        const totalCostInEther = (ethPrice * mintAmount).toString(); // Total cost in Ether
-        const totalCostInWei = ethers.parseUnits(totalCostInEther, "ether"); // Convert to Wei
-
-        const result = await writeContract({
-          abi: lilcooties,
-          address: "0xDeC023Bb7FbC90Fe6211716d10261cE9EEb294C7",
-          functionName: "mintWithFLR",
-          args: [
-            ethAddress, // The address to which the NFT will be minted
-            mintAmount, // The number of tokens to mint
-          ],
-          value: totalCostInWei, // The total ETH value to send with the transaction in Wei
-          chainId: 19,
-        });
-        console.log("Transaction hash:", result);
-      } else if (mintType === "FREE") {
-        const result = await writeContract({
-          abi: lilcooties,
-          address: "0xDeC023Bb7FbC90Fe6211716d10261cE9EEb294C7",
-          functionName: "freeMint",
-          args: [mintAmount],
-        });
-        console.log("Transaction hash:", result);
-      }
-    } catch (error) {
-      console.error(`Error during ${mintType} minting:`, error);
-      setErrorWithTimeout(
-        `Error during ${mintType} minting: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    } finally {
-      setIsMinting(false);
-    }
-  };
-
-  if (!isConnected) {
-    return (
-      <Alert status="warning">
-        <AlertIcon />
-        Please connect your wallet.
-      </Alert>
-    );
-  }
-
-  const maxMints = typeof totalMinted === "number" ? totalMinted : undefined;
-
-  return (
-    <Flex
-      direction="column"
-      align="center"
-      justify="center"
-      position="relative"
-      w="100vw"
-      h="100vh"
-      overflow="hidden"
-    >
-      {/* Loading animation that displays when Spline is not loaded */}
-      {!isSplineLoaded && (
-        <Flex
-          justify="center"
-          align="center"
-          position="absolute"
-          top="0"
-          left="0"
-          width="100%"
-          height="100%"
-          bg="blackAlpha.700" // Optional: adding a background overlay
-        >
-          <div
-            style={{
-              border: "4px solid rgba(255, 255, 255, 0.3)",
-              borderTop: "4px solid #3498db",
-              borderRadius: "50%",
-              width: "40px",
-              height: "40px",
-              animation: "spin 2s linear infinite",
-            }}
-            // Inline style for keyframes doesn't work directly in React, so you should add it in your global CSS file
-          ></div>
-        </Flex>
-      )}
-
-      {/* Spline 3D Background */}
-      <Spline
-        scene="https://prod.spline.design/REAVPvrfrE-wHdgZ/scene.splinecode"
-        onLoad={() => setSplineLoaded(true)} // Set the Spline as loaded
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: 0,
-          display: isSplineLoaded ? "block" : "none",
-        }}
-      />
-      <Box
-        position="absolute"
-        top="20%" // Position the alerts box 20% from the top of the viewport
-        left="50%"
-        transform="translateX(-50%)"
-        width="100%" // Ensure it spans the full width of the viewport
-        maxWidth="1200px" // Maximum width of the alerts box
-        px="4" // Horizontal padding
-        zIndex="10"
-      >
-        {/* Display errors related to contract interactions */}
-        {mintError && (
-          <Alert status="error" justifyContent="center" mb="4">
-            <AlertIcon />
-            {mintError}
-          </Alert>
-        )}
-        {totalMintedError && (
-          <Alert status="error" justifyContent="center">
-            <AlertIcon />
-            {totalMintedError.message}
-          </Alert>
-        )}
-      </Box>
-      {/* Minting UI */}
-
-      {/* Invisible Buttons */}
-      <Button
-        aria-label="Mint"
-        position="absolute"
-        top="83%" // Adjust based on the Spline button position
-        left="50%" // Adjust based on the Spline button position
-        transform="translate(-50%, -70%)"
-        w="260px" // Adjust based on the Spline button size
-        h="100px" // Adjust based on the Spline button size
-        opacity="0"
-        onClick={() => handleMint("FREE")}
-      />
-      <Button
-        aria-label="FreeMint"
-        position="absolute"
-        top="68%" // Adjust based on the Spline button position
-        left="50%" // Adjust based on the Spline button position
-        transform="translate(-50%, -70%)"
-        w="260px" // Adjust based on the Spline button size
-        h="100px" // Adjust based on the Spline button size
-        opacity="0"
-        onClick={() => handleMint("FLR")}
-      />
-
-      {/* Centered Content */}
-      <Flex
-        direction="row"
-        align="center" // Vertically center the content
-        justify="flex" // Move content to the end (right) of the container
-        zIndex="10"
-        width="60%" // Take full width to allow content to push right
-        maxWidth="1300px"
-        position="absolute" // Position absolutely to place it over the Spline background
-        right={{ base: "45%", md: "30%", lg: "0%" }} // Align to the right
-        top={{ base: "52%", md: "65%", lg: "60%" }} // Example responsive top value
-        transform={{ base: "translateY(-50%)", md: "translateY(-100%)" }} // Example responsive transform
-        p="1" // Padding, adjust as needed
-        gap={5}
-      >
-        {isConnected ? (
-          <>
-            <Flex
-              display="flex"
-              flexWrap="wrap"
-              gap={5}
-              direction={{ base: "column", md: "row" }}
-              align="flex-start"
-              justify={{ base: "center", md: "flex" }}
-              zIndex="10"
-              width={{ base: "90%", md: "50%", lg: "30%" }}
-              height="-50%"
-              p={4}
-              maxWidth="1200px"
-            >
-              <Input
-                placeholder="Number of NFTs to mint"
-                value={mintAmount}
-                onChange={(e) => setMintAmount(Number(e.target.value))}
-                type="number"
-                min={1}
-                max={maxMints}
-              />
-
-              <Text>Total Free Mints Available: {totalMinted?.toString()}</Text>
-            </Flex>
-          </>
-        ) : (
-          <Alert status="warning">
-            <AlertIcon />
-            Please connect your wallet.
-          </Alert>
-        )}
-      </Flex>
-    </Flex>
-  );
-};
-
-export default MainPane;
